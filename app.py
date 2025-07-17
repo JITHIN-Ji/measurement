@@ -211,14 +211,14 @@ def predict_measurements():
 
         
         measurements = {
-        'Waist': float(round(waist, 2)),
-        'Hip': float(round(hip, 2)),
-        'Bicep': float(round(bicep, 2)),
-        'Neck': float(round(neck, 2)),
-        'Wrist': float(round(wrist, 2)),
-        'Chest': float(round(chest, 2)),
-        'Shoulder': float(round(shoulder, 2)),
-        'Sleeve': float(round(sleeve, 2))
+        'waist': float(round(waist, 2)),
+        'hip': float(round(hip, 2)),
+        'bicep': float(round(bicep, 2)),
+        'neck': float(round(neck, 2)),
+        'wrist': float(round(wrist, 2)),
+        'chest': float(round(chest, 2)),
+        'shoulder': float(round(shoulder, 2)),
+        'sleeve': float(round(sleeve, 2))
     }
 
 
