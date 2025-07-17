@@ -75,21 +75,20 @@ def calculate_additional_measurements(age, gender_str, height):
 
 
 def validate_input(data, for_update=False):
-    """Validate input data."""
-    required_fields = ['user_id']
+    required_fields = ['parent_id', 'child_id']
     if not for_update:
         required_fields.extend(['height', 'weight', 'gender', 'age'])
-    
-    # Check if all required fields are present
+
     for field in required_fields:
         if field not in data:
             return False, f"Missing required field: {field}"
-    
-    # Validate user_id
-    user_id = data['user_id']
-    if not isinstance(user_id, (str, int)) or str(user_id).strip() == '':
-        return False, "User ID must be a non-empty string or number"
-    
+
+    if not isinstance(data['parent_id'], str) or not data['parent_id'].strip():
+        return False, "Parent ID must be a non-empty string"
+    if not isinstance(data['child_id'], str) or not data['child_id'].strip():
+        return False, "Child ID must be a non-empty string"
+
+
     # Skip other validations for update requests with only measurements
     if for_update and len(data) == 2 and 'measurements' in data:
         return validate_measurements_format(data['measurements'])
@@ -136,7 +135,7 @@ def validate_measurements_format(measurements):
     if not isinstance(measurements, dict):
         return False, "Measurements must be a dictionary"
     
-    valid_measurement_keys = ['Waist', 'Hip', 'Bicep', 'Neck', 'Wrist', 'Chest', 'Shoulder', 'Sleeve']
+    valid_measurement_keys = ['waist', 'hip', 'bicep', 'neck', 'wrist', 'chest', 'shoulder', 'sleeve']
 
     for key, value in measurements.items():
         if key not in valid_measurement_keys:
@@ -178,23 +177,20 @@ def health_check():
 def predict_measurements():
     """Predict body measurements based on input parameters."""
     try:
-        # Get JSON data from request
         if not request.is_json:
             return jsonify({'error': 'Request must be JSON'}), 400
-        
+
         data = request.get_json()
-        
-        # Validate input
         is_valid, message = validate_input(data)
         if not is_valid:
             return jsonify({'error': message}), 400
-        
-        # Check if model is loaded
+
         if model is None:
             return jsonify({'error': 'Model not initialized'}), 500
-        
-        # Prepare input data
-        user_id = str(data['user_id'])
+
+        parent_id = str(data['parent_id'])
+        child_id = str(data['child_id'])
+
         age = float(data['age'])
         gender = convert_gender(data['gender'])
         weight = float(data['weight'])
@@ -202,160 +198,139 @@ def predict_measurements():
         input_data = [[age, gender, weight, height]]
 
         prediction = model.predict(input_data)[0]
-        
-        
-        
         waist, hip, bicep, neck, wrist = prediction[:5]
-
         chest, shoulder, sleeve = calculate_additional_measurements(age, 'male' if gender == 1 else 'female', height)
 
-        
         measurements = {
-        'waist': float(round(waist, 2)),
-        'hip': float(round(hip, 2)),
-        'bicep': float(round(bicep, 2)),
-        'neck': float(round(neck, 2)),
-        'wrist': float(round(wrist, 2)),
-        'chest': float(round(chest, 2)),
-        'shoulder': float(round(shoulder, 2)),
-        'sleeve': float(round(sleeve, 2))
-    }
+            'waist': float(round(waist, 2)),
+            'hip': float(round(hip, 2)),
+            'bicep': float(round(bicep, 2)),
+            'neck': float(round(neck, 2)),
+            'wrist': float(round(wrist, 2)),
+            'chest': float(round(chest, 2)),
+            'shoulder': float(round(shoulder, 2)),
+            'sleeve': float(round(sleeve, 2))
+        }
 
-
-        
-        # Load existing measurements data
+        # Load and structure data
         measurements_data = load_measurements()
-        
-        # Save user data
+        if parent_id not in measurements_data:
+            measurements_data[parent_id] = {}
+
         user_data = {
-            'user_id': user_id,
+            'parent_id': parent_id,
+            'child_id': child_id,
             'input_parameters': {
                 'age': age,
                 'gender': 'male' if gender == 1 else 'female',
                 'weight': weight,
-                'height': height,
-                
+                'height': height
             },
             'measurements_cm': measurements,
             'measurements_inches': {
                 key: round(value / 2.54, 2) for key, value in measurements.items()
             },
-
             'prediction_timestamp': datetime.now().isoformat(),
             'last_updated': datetime.now().isoformat(),
             'is_predicted': True,
             'is_manually_updated': False
         }
-        
-        measurements_data[user_id] = user_data
-        
-        # Save to file
+
+        measurements_data[parent_id][child_id] = user_data
+
         if save_measurements(measurements_data):
-            logger.info(f"Measurements saved for user {user_id}")
+            logger.info(f"Measurements saved for {parent_id}/{child_id}")
         else:
-            logger.error(f"Failed to save measurements for user {user_id}")
-        
-        # Prepare response
-        response = {
+            logger.error(f"Failed to save measurements for {parent_id}/{child_id}")
+
+        return jsonify({
             'success': True,
-            'user_id': user_id,
+            'parent_id': parent_id,
+            'child_id': child_id,
             'measurements_cm': measurements,
             'measurements_inches': {
                 key: round(value / 2.54, 2) for key, value in measurements.items()
             },
             'message': 'Measurements predicted and saved successfully'
-        }
-        
-        return jsonify(response)
-        
+        })
+
     except Exception as e:
         logger.error(f"Error in prediction: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
+
 @app.route('/update-measurements', methods=['PUT'])
 def update_measurements():
-    """Update measurements for a specific user."""
+    """Update measurements for a specific child under a parent."""
     try:
-        # Get JSON data from request
         if not request.is_json:
             return jsonify({'error': 'Request must be JSON'}), 400
-        
+
         data = request.get_json()
-        
-        # Validate input
+
         is_valid, message = validate_input(data, for_update=True)
         if not is_valid:
             return jsonify({'error': message}), 400
-        
-        user_id = str(data['user_id'])
-        
-        # Load existing measurements data
+
+        parent_id = str(data['parent_id'])
+        child_id = str(data['child_id'])
+
         measurements_data = load_measurements()
-        
-        # Check if user exists
-        if user_id not in measurements_data:
-            return jsonify({'error': f'User {user_id} not found. Please make a prediction first.'}), 404
-        
-        # Get current user data
-        user_data = measurements_data[user_id]
-        
-        # Update measurements if provided
+
+        if parent_id not in measurements_data or child_id not in measurements_data[parent_id]:
+            return jsonify({'error': f'Child {child_id} under parent {parent_id} not found. Please make a prediction first.'}), 404
+
+        user_data = measurements_data[parent_id][child_id]
+
         if 'measurements' in data:
             is_valid, message = validate_measurements_format(data['measurements'])
             if not is_valid:
                 return jsonify({'error': message}), 400
-            
-            # Update measurements in cm
+
             for key, value in data['measurements'].items():
                 user_data['measurements_cm'][key] = round(float(value), 2)
-            
-            # Update measurements in inches
+
             user_data['measurements_inches'] = {
                 key: round(value / 2.54, 2) for key, value in user_data['measurements_cm'].items()
             }
-            
-            # Update metadata
+
             user_data['last_updated'] = datetime.now().isoformat()
             user_data['is_manually_updated'] = True
-        
-        # Save updated data
+
         if save_measurements(measurements_data):
-            logger.info(f"Measurements updated for user {user_id}")
+            logger.info(f"Measurements updated for {parent_id}/{child_id}")
         else:
-            logger.error(f"Failed to update measurements for user {user_id}")
+            logger.error(f"Failed to update measurements for {parent_id}/{child_id}")
             return jsonify({'error': 'Failed to save updated measurements'}), 500
-        
-        # Prepare response
-        response = {
+
+        return jsonify({
             'success': True,
-            'user_id': user_id,
+            'parent_id': parent_id,
+            'child_id': child_id,
             'measurements_cm': user_data['measurements_cm'],
             'measurements_inches': user_data['measurements_inches'],
             'message': 'Measurements updated successfully'
-        }
-        
-        return jsonify(response)
-        
+        })
+
     except Exception as e:
         logger.error(f"Error updating measurements: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/get-measurements/<user_id>', methods=['GET'])
-def get_measurements(user_id):
-    """Get measurements for a specific user."""
+@app.route('/get-measurements/<parent_id>/<child_id>', methods=['GET'])
+def get_measurements(parent_id, child_id):
+    """Get measurements for a specific child under a parent."""
     try:
-        # Load measurements data
         measurements_data = load_measurements()
-        
-        # Check if user exists
-        if user_id not in measurements_data:
-            return jsonify({'error': f'User {user_id} not found'}), 404
-        
-        user_data = measurements_data[user_id]
-        
-        response = {
+
+        if parent_id not in measurements_data or child_id not in measurements_data[parent_id]:
+            return jsonify({'error': f'Child {child_id} under parent {parent_id} not found'}), 404
+
+        user_data = measurements_data[parent_id][child_id]
+
+        return jsonify({
             'success': True,
-            'user_id': user_id,
+            'parent_id': parent_id,
+            'child_id': child_id,
             'input_parameters': user_data.get('input_parameters', {}),
             'measurements_cm': user_data.get('measurements_cm', {}),
             'measurements_inches': user_data.get('measurements_inches', {}),
@@ -363,10 +338,8 @@ def get_measurements(user_id):
             'last_updated': user_data.get('last_updated', ''),
             'is_predicted': user_data.get('is_predicted', False),
             'is_manually_updated': user_data.get('is_manually_updated', False)
-        }
-        
-        return jsonify(response)
-        
+        })
+
     except Exception as e:
         logger.error(f"Error retrieving measurements: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
