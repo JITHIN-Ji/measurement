@@ -4,7 +4,7 @@ import logging
 import json
 import os
 from datetime import datetime
-
+from joblib import load
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ model = None
 df = None
 MEASUREMENTS_FILE = 'measurements.json'
 
-from joblib import load
+
 
 def initialize_model():
     global model
@@ -379,9 +379,8 @@ def not_found(error):
 def method_not_allowed(error):
     return jsonify({'error': 'Method not allowed'}), 405
 
+initialize_model()
 if __name__ == '__main__':
     # Initialize model on startup
-    initialize_model()
     
-    # Run the Flask app
     app.run(debug=True, host='0.0.0.0', port=5000)
