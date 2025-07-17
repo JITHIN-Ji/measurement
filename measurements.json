@@ -1,35 +1,70 @@
 {
-  "user123": {
-    "user_id": "user123",
-    "input_parameters": {
-      "age": 15.0,
-      "gender": "male",
-      "weight": 50.0,
-      "height": 160.0
+  "parent123": {
+    "user123": {
+      "input_parameters": {
+        "age": 15.0,
+        "gender": "male",
+        "weight": 50.0,
+        "height": 160.0
+      },
+      "measurements_cm": {
+        "Waist": 85.68000030517578,
+        "Hip": 93.6500015258789,
+        "Bicep": 22.93000030517578,
+        "Neck": 30.100000381469727,
+        "Wrist": 14.350000381469727,
+        "Chest": 75.2,
+        "Shoulder": 36.8,
+        "Sleeve": 51.2
+      },
+      "measurements_inches": {
+        "Waist": 33.73,
+        "Hip": 36.87,
+        "Bicep": 9.03,
+        "Neck": 11.85,
+        "Wrist": 5.65,
+        "Chest": 29.61,
+        "Shoulder": 14.49,
+        "Sleeve": 20.16
+      },
+      "prediction_timestamp": "2025-07-16T16:33:34.842038",
+      "last_updated": "2025-07-16T16:33:34.842038",
+      "is_predicted": true,
+      "is_manually_updated": false
     },
-    "measurements_cm": {
-      "Waist": 85.68000030517578,
-      "Hip": 93.6500015258789,
-      "Bicep": 22.93000030517578,
-      "Neck": 30.100000381469727,
-      "Wrist": 14.350000381469727,
-      "Chest": 75.2,
-      "Shoulder": 36.8,
-      "Sleeve": 51.2
-    },
-    "measurements_inches": {
-      "Waist": 33.73,
-      "Hip": 36.87,
-      "Bicep": 9.03,
-      "Neck": 11.85,
-      "Wrist": 5.65,
-      "Chest": 29.61,
-      "Shoulder": 14.49,
-      "Sleeve": 20.16
-    },
-    "prediction_timestamp": "2025-07-16T16:33:34.842038",
-    "last_updated": "2025-07-16T16:33:34.842038",
-    "is_predicted": true,
-    "is_manually_updated": false
+    "child001": {
+      "parent_id": "parent123",
+      "child_id": "child001",
+      "input_parameters": {
+        "age": 12.0,
+        "gender": "male",
+        "weight": 70.0,
+        "height": 175.0
+      },
+      "measurements_cm": {
+        "waist": 85.01000213623047,
+        "hip": 86.93000030517578,
+        "bicep": 23.440000534057617,
+        "neck": 31.360000610351562,
+        "wrist": 14.600000381469727,
+        "chest": 82.25,
+        "shoulder": 40.25,
+        "sleeve": 56.0
+      },
+      "measurements_inches": {
+        "waist": 33.47,
+        "hip": 34.22,
+        "bicep": 9.23,
+        "neck": 12.35,
+        "wrist": 5.75,
+        "chest": 32.38,
+        "shoulder": 15.85,
+        "sleeve": 22.05
+      },
+      "prediction_timestamp": "2025-07-17T15:16:40.890646",
+      "last_updated": "2025-07-17T15:16:40.890646",
+      "is_predicted": true,
+      "is_manually_updated": false
+    }
   }
 }
