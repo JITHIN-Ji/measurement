@@ -1,22 +1,31 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from joblib import load
 import logging
 import json
 import os
 from datetime import datetime
 from joblib import load
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
+# Enable CORS for all domains on all routes
+CORS(app, resources={
+    r"/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
+
 # Global variables to store model and data
 model = None
 df = None
 MEASUREMENTS_FILE = 'measurements.json'
-
-
 
 def initialize_model():
     global model
@@ -25,8 +34,6 @@ def initialize_model():
         logger.info("Pre-trained model loaded successfully.")
     except Exception as e:
         logger.error(f"Failed to load model: {str(e)}")
-
-
 
 def load_measurements():
     """Load measurements from JSON file."""
@@ -49,7 +56,6 @@ def save_measurements(measurements_data):
         logger.error(f"Error saving measurements: {str(e)}")
         return False
     
-
 def calculate_additional_measurements(age, gender_str, height):
     """Calculate Chest, Shoulder, and Sleeve using formulas based on age, gender, and height."""
     if age < 2:
@@ -73,7 +79,6 @@ def calculate_additional_measurements(age, gender_str, height):
 
     return chest, shoulder, sleeve
 
-
 def validate_input(data, for_update=False):
     required_fields = ['parent_id', 'child_id']
     if not for_update:
@@ -87,7 +92,6 @@ def validate_input(data, for_update=False):
         return False, "Parent ID must be a non-empty string"
     if not isinstance(data['child_id'], str) or not data['child_id'].strip():
         return False, "Child ID must be a non-empty string"
-
 
     # Skip other validations for update requests with only measurements
     if for_update and len(data) == 2 and 'measurements' in data:
@@ -258,7 +262,6 @@ def predict_measurements():
         logger.error(f"Error in prediction: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
-
 @app.route('/update-measurements', methods=['PUT'])
 def update_measurements():
     """Update measurements for a specific child under a parent."""
@@ -352,8 +355,8 @@ def not_found(error):
 def method_not_allowed(error):
     return jsonify({'error': 'Method not allowed'}), 405
 
+# Initialize model on startup
 initialize_model()
+
 if __name__ == '__main__':
-    # Initialize model on startup
-    
     app.run(debug=True, host='0.0.0.0', port=5000)

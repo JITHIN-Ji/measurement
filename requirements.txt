@@ -2,7 +2,7 @@
 setuptools>=65.0.0
 wheel
 pip>=24.0
-
+flask-cors
 
 # Core web framework
 flask==3.1.1
