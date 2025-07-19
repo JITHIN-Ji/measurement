@@ -5,7 +5,6 @@ import logging
 import json
 import os
 from datetime import datetime
-from joblib import load
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -13,14 +12,8 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Enable CORS for all domains on all routes
-CORS(app, resources={
-    r"/*": {
-        "origins": "*",
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
+# Simple CORS configuration - allow everything
+CORS(app)
 
 # Global variables to store model and data
 model = None
@@ -30,7 +23,7 @@ MEASUREMENTS_FILE = 'measurements.json'
 def initialize_model():
     global model
     try:
-        model = load("swakriti_body_predictor.pkl")  # Your actual model
+        model = load("swakriti_body_predictor.pkl")
         logger.info("Pre-trained model loaded successfully.")
     except Exception as e:
         logger.error(f"Failed to load model: {str(e)}")
@@ -185,6 +178,8 @@ def predict_measurements():
             return jsonify({'error': 'Request must be JSON'}), 400
 
         data = request.get_json()
+        logger.info(f"Received prediction request: {data}")
+        
         is_valid, message = validate_input(data)
         if not is_valid:
             return jsonify({'error': message}), 400
@@ -260,7 +255,7 @@ def predict_measurements():
 
     except Exception as e:
         logger.error(f"Error in prediction: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
+        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
 
 @app.route('/update-measurements', methods=['PUT'])
 def update_measurements():
